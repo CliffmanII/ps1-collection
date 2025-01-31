@@ -1,0 +1,1 @@
+restart-Service -Name IntuneManagementExtension

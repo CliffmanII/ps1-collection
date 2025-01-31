@@ -1,0 +1,1 @@
+GWMI -namespace root\cimv2 -class win32_volume | FL -property DriveLetter, DeviceID

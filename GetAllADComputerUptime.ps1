@@ -1,0 +1,2 @@
+$ErrorActionPreference = "SilentlyContinue"
+ForEach($computer in Get-ADComputer -Filter {Name -like "*" -and Enabled -eq $True -and OperatingSystem -notlike "*Server*" -and OperatingSystem -notlike "*unknown*"}){ Get-WmiObject Win32_OperatingSystem -ComputerName $computer.name | select csname, @{LABEL='LastBootUpTime';EXPRESSION={$_.ConverttoDateTime($_.lastbootuptime)} }  } 

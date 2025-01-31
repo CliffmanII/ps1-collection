@@ -1,0 +1,1 @@
+Get-NetFirewallProfile | Select Name, Enabled

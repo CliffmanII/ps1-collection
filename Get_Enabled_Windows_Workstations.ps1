@@ -1,0 +1,1 @@
+Get-ADComputer -Filter 'OperatingSystem -notLike "*SERVER*"-and OperatingSystem -notLike "*linux*" -and Enabled -eq "True"' -Properties lastlogondate,operatingsystem | select name,lastlogondate,operatingsystem | sort lastlogondate | Out-File C:/EnabledComputers010725.csv
