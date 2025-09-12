@@ -6,7 +6,7 @@ if ($CurrentOS.contains("11")) {
   
 # Define the file paths and URLs
 $logFile = "C:\Temp\Windows11UpgradeLog.txt"
-$windows11LocalDownloadUrl = "\\kazoo-fs01\shared\readonly\Windows11\Windows11InstallationAssistant.exe"  # URL to download Windows 11 Installation Assistant
+$windows11LocalDownloadUrl = "\\REDACTED\shared\readonly\Windows11\Windows11InstallationAssistant.exe"  # URL to download Windows 11 Installation Assistant
 $windows11OnlineDownloadUrl = "https://go.microsoft.com/fwlink/?linkid=2171764"  # URL to download Windows 11 Installation Assistant
 
 # Log function to write to log file
@@ -14,6 +14,12 @@ Function Write-Log {
     param ([string]$Message)
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
     $logMessage = "$timestamp - $Message"
+    
+    # Check if C:\temp exists, create if it it does not exist
+    $dirPath = "C:\Temp"
+    if (-not (Test-Path $dirPath)) {
+      New-Item -ItemType Directory -Path $dirPath
+    }
     
     # Write message to log file and output to console
     Add-Content -Path $logFile -Value $logMessage
@@ -24,7 +30,7 @@ Function Write-Log {
 Function Download-Windows11Installer {
     Write-Log "Downloading Windows 11 Installation Assistant..."
 
-    $installerPath = "C:\TEMP\Windows11Setup.exe"
+    $installerPath = "C:\temp\Windows11Setup.exe"
     try {
         Copy-Item -Path $windows11LocalDownloadUrl -Destination $installerPath
         Write-Log "Windows 11 Installation Assistant downloaded successfully from shared drive at $installerPath."
@@ -51,7 +57,8 @@ Function Upgrade-Windows11 {
 
     if ($installerPath -ne $null) {
         Write-Log "Starting the upgrade process..."
-        Start-Process -FilePath $installerPath -ArgumentList "/auto upgrade /quietinstall /noreboot" -Wait
+        $process = Start-Process -FilePath $installerPath -ArgumentList "/auto upgrade /eula accept /quiet /noreboot" -PassThru
+        Set-ProcessPriority -ProcessId $Process.id -Priority High
         Write-Log "Windows 11 upgrade process started."
     } else {
         Write-Log "Installer path is invalid, upgrade aborted."
@@ -63,13 +70,13 @@ Function Monitor-UpgradeStatus {
     Write-Log "Monitoring upgrade status..."
 	Start-Sleep -Seconds 30
     # Checking for the setup process
-    $process = Get-Process -Name "setup" -ErrorAction SilentlyContinue
+    $process = Get-Process -Name "Windows11Setup" -ErrorAction SilentlyContinue
     if ($process) {
         Write-Log "Upgrade process is running..."
         while ($process.HasExited -eq $false) {
             Write-Log "Upgrade still in progress..."
-            Start-Sleep -Seconds 30
-            $process = Get-Process -Name "setup" -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 300
+            $process = Get-Process -Name "Windows11Setup" -ErrorAction SilentlyContinue
         }
         Write-Log "Upgrade process completed successfully."
     } else {
