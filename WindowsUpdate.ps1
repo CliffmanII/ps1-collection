@@ -13,4 +13,5 @@ try  {
 }
 
 #install non-driver, OneDrive updates. Auto Accept, doesn't auto reboot
-Install-WindowsUpdate -NotCategory "Drivers" -NotTitle "OneDrive" -AcceptAll -IgnoreReboot
+Install-WindowsUpdate -NotCategory "Drivers" -NotTitle "OneDrive" -Title "KB" -AcceptAll -IgnoreReboot
+
