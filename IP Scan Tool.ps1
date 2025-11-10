@@ -1,9 +1,23 @@
+function Write-ColorOutput($ForegroundColor) {
+    #save the current color
+    $fc = $host.UI.RawUI.ForegroundColor
+    #set the new color
+    $host.UI.RawUI.ForegroundColor = $ForegroundColor
+
+    if ($args) {
+        Write-Output $args
+    } else {
+        $input | Write-Output
+    }
+    #restore the original color
+    $host.UI.RawUI.ForegroundColor = $fc
+}
 
 # Windows PowerShell 5.1 + ThreadJobs
 Import-Module ThreadJob
 
 $ips = 1..254 | ForEach-Object { "10.69.10.$_" }
-$ThrottleLimit = 127
+$ThrottleLimit = 255
 $jobs = @()
 
 # Script block executed by each thread
@@ -27,12 +41,33 @@ $scriptBlock = {
     }
 }
 
+Write-Host "Scanning..."
+
 foreach ($ip in $ips) {
     # Throttle: keep at/below the limit
     while ( ($jobs | Where-Object State -eq 'Running').Count -ge $ThrottleLimit ) {
         Start-Sleep -Milliseconds 50
-    } $jobs += Start-ThreadJob -ArgumentList $ip -ScriptBlock $scriptBlock
+    } $jobs += Start-ThreadJob -ArgumentList $ip -ScriptBlock $scriptBlock -ThrottleLimit $ThrottleLimit
 }
+
+Do {
+	Clear-Host
+	$runningJobs = (Get-Job -State Running).count
+	$waitingJobs = (Get-Job -State NotStarted).count
+	$completedJobs = (Get-Job -State Completed).count
+	$failedJobs = (Get-Job -State Failed).count	
+	
+	Write-ColorOutput Yellow "$runningJobs IPs are being scanned."
+	Write-ColorOutput Cyan "$waitingJobs IPs are queued to be scanned."
+	Write-ColorOutput Green "$completedJobs IPs have been scanned."
+	Write-ColorOutput Red "$failedJobs IPs failed to scan.`n"
+	
+	#if jobs are still running or queued to run, waits one minute, then reports again
+	if (($runningJobs -gt 0) -or ($waitingJobs -gt 0)) {
+		Write-ColorOutput Magenta "Scanning jobs are in-progress. Please wait."
+		Sleep 5
+	}
+} While (($runningJobs -gt 0) -or ($waitingJobs -gt 0))
 
 # Finish and collect results
 Wait-Job -Job $jobs | Out-Null
@@ -40,10 +75,6 @@ $results = Receive-Job -Job $jobs
 $jobs | Remove-Job -Force | Out-Null
 
 # Example: show alive hosts
-$results | Where-Object Alive | Sort-Object { IP } | ForEach-Object {
-	if ($_.Hostname) {
-		"$($_.IP) - ALIVE - $($_.Hostname)"
-	} else {
-		"$($_.IP) - ALIVE - Could not resolve hostname"
-	}
+$results | Where-Object Alive | Sort-Object -property IP | ForEach-Object {
+	if ($_.Hostname) { "$($_.IP) - ALIVE - $($_.Hostname)" } else { "$($_.IP) - ALIVE"}
 }
