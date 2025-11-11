@@ -22,6 +22,7 @@ try {
 }
 
 $subnet = $NULL
+$ips = $NULL
 $LocalIP = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "169.*" } | Where-Object { $_.IPAddress -notlike "127.*" } | Where-Object { $_.InterfaceAlias -notlike "vEthernet*" } | Select-Object -property "IPAddress"
 foreach ($ip in $LocalIP) {
     $address = [System.Net.IPAddress]$ip.IpAddress
@@ -80,7 +81,7 @@ Do {
 	#if jobs are still running or queued to run, waits one minute, then reports again
 	if (($runningJobs -gt 0) -or ($waitingJobs -gt 0)) {
 		Write-ColorOutput Magenta "Scanning jobs are in-progress. Please wait."
-		Sleep 5
+		Sleep 2
 	}
 } While (($runningJobs -gt 0) -or ($waitingJobs -gt 0))
 
