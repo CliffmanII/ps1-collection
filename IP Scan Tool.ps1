@@ -16,7 +16,7 @@ function Write-ColorOutput($ForegroundColor) {
 # Windows PowerShell 5.1 + ThreadJobs
 Import-Module ThreadJob
 
-$ips = 1..254 | ForEach-Object { "10.69.10.$_" }
+$ips = 1..254 | ForEach-Object { "172.16.2.$_" }
 $ThrottleLimit = 255
 $jobs = @()
 
@@ -75,6 +75,10 @@ $results = Receive-Job -Job $jobs
 $jobs | Remove-Job -Force | Out-Null
 
 # Example: show alive hosts
-$results | Where-Object Alive | Sort-Object -property IP | ForEach-Object {
-	if ($_.Hostname) { "$($_.IP) - ALIVE - $($_.Hostname)" } else { "$($_.IP) - ALIVE"}
+if($results.count -ge 1) {
+    $results | Where-Object Alive | Sort-Object -property IP | ForEach-Object {
+	    if ($_.Hostname) { "$($_.IP) - ALIVE - $($_.Hostname)" } else { "$($_.IP) - ALIVE"}
+    }
+} else {
+    Write-Host "No alive hosts Found."
 }
