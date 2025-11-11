@@ -14,9 +14,27 @@ function Write-ColorOutput($ForegroundColor) {
 }
 
 # Windows PowerShell 5.1 + ThreadJobs
-Import-Module ThreadJob
+try { 
+    Import-Module ThreadJob 
+} catch {
+    Install-Module ThreadJob -Force
+    Import-Module ThreadJob
+}
 
-$ips = 1..254 | ForEach-Object { "172.16.2.$_" }
+$LocalIP = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "169.*" } | Where-Object { $_.IPAddress -notlike "127.*" } | Where-Object { $_.InterfaceAlias -notlike "vEthernet*" } | Select-Object -property "IPAddress"
+if ($LocalIP.count -ge 2) {
+    Write-Host "Multiple valid IP addresses found, aborting."
+    Exit
+} else {
+    $ip = [System.Net.IPAddress]$LocalIP.IpAddress
+    $mask = [System.Net.IPAddress]"255.255.255.0"
+    $subnetAddress = $ip.Address -band $mask.Address
+    $subnet = [System.Net.IPAddress]$subnetAddress
+    $subnet = $subnet.IPAddressToString
+    $subnet = $subnet.substring(0, $subnet.length -1)
+}
+
+$ips = 1..254 | ForEach-Object { "$subnet$_" }
 $ThrottleLimit = 255
 $jobs = @()
 
