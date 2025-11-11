@@ -11,7 +11,7 @@ try {
     }
 }
 
-
+# Helper function to Write-Host with color
 function Write-ColorOutput($ForegroundColor) {
     #save the current color
     $fc = $host.UI.RawUI.ForegroundColor
@@ -27,6 +27,7 @@ function Write-ColorOutput($ForegroundColor) {
     $host.UI.RawUI.ForegroundColor = $fc
 }
 
+# Get local IP addresses, excluding loopback, APIPA, and virtual ethernet interfaces
 $subnet = $NULL
 $ips = $NULL
 $LocalIP = Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.IPAddress -notlike "169.*" } | Where-Object { $_.IPAddress -notlike "127.*" } | Where-Object { $_.InterfaceAlias -notlike "vEthernet*" } | Select-Object -property "IPAddress"
@@ -71,6 +72,7 @@ $scriptBlock = {
     }
 }
 
+# Start thread-jobs for to scan each $ip in $ips
 foreach ($ip in $ips) {
     # Throttle: keep at/below the limit
     while ( ($jobs | Where-Object State -eq 'Running').Count -ge $ThrottleLimit ) {
@@ -82,8 +84,8 @@ foreach ($ip in $ips) {
     }
 }
 
+# Thread-job progress reporting
 Do {
-
 	$runningJobs = (Get-Job -State Running).count
 	$waitingJobs = (Get-Job -State NotStarted).count
 	$completedJobs = (Get-Job -State Completed).count
@@ -96,7 +98,7 @@ Do {
 	Write-ColorOutput Red "$failedJobs IPs failed to scan.`n"
     Write-Host "--------------------------------------"
 	
-	#if jobs are still running or queued to run, waits one minute, then reports again
+	#if jobs are still running or queued to run, waits, then reports again
 	if (($runningJobs -gt 0) -or ($waitingJobs -gt 0)) {
 		Write-ColorOutput Magenta "Scanning jobs are in-progress. Please wait..."
 		Sleep 5
@@ -112,9 +114,9 @@ try {
 }
 $jobs | Remove-Job -Force | Out-Null
 
-# Example: show alive hosts
+# Report alive hosts, including DNS names if found
 try {
-    if($results.count -ge 1) {
+    if ($results.count -ge 1) {
         $results | Where-Object Alive | Sort-Object -property IP | ForEach-Object {
 	        if ($_.Hostname) { "$($_.IP) - ALIVE - $($_.Hostname)" } else { "$($_.IP) - ALIVE"}
         }
